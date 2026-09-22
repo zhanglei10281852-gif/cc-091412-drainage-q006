@@ -1,33 +1,25 @@
-import json
-import os
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+"""进程入口：复用基线健康检查契约（/health 返回 service 标识）。
+
+业务实现见 inspection 包；默认数据文件位于 .runtime/inspection.db，
+可用 INSPECTION_DB 环境变量覆盖。
+"""
+
+from inspection.api import create_server
+
+SERVICE_NAME = "pipeline-inspection-index"
 
 
-SERVICE_NAME = "drainage-service-starter"
+def main() -> None:
+    server = create_server()
+    print("管道影像采集索引服务已启动", flush=True)
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        server.worker.stop()
+        server.server_close()
 
 
-class Handler(BaseHTTPRequestHandler):
-    def do_GET(self):  # noqa: N802
-        if self.path == "/health":
-            payload = json.dumps({"status": "ok", "service": SERVICE_NAME}).encode("utf-8")
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Content-Length", str(len(payload)))
-            self.end_headers()
-            self.wfile.write(payload)
-            return
-        payload = b'{"error":"not_found"}'
-        self.send_response(404)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Content-Length", str(len(payload)))
-        self.end_headers()
-        self.wfile.write(payload)
-
-    def log_message(self, *_args):
-        return
-
-
-def create_server():
-    port = int(os.environ.get("PORT", "8000"))
-    host = os.environ.get("HOST", "0.0.0.0")
-    return ThreadingHTTPServer((host, port), Handler)
+if __name__ == "__main__":
+    main()

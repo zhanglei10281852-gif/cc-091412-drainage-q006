@@ -10,3 +10,6 @@ __pycache__/
 .runtime/
 dist/
 build/
+
+# 本地运行数据目录
+/data/
